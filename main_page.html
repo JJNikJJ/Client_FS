@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Главная страница</title>
+    <style>
+        #mapModal {
+            height: 400px; /* Устанавливаем высоту карты */
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid d-flex justify-content-between">
+        <a class="navbar-brand" href="main_page.html">Главная</a>
+        <span class="navbar-text" id="usernameDisplay">Гость</span>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav d-flex justify-content-between flex-grow-1">
+                <li class="nav-item">
+                    <a class="nav-link" href="make_order.html">Сделать заказ</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="profile.html">Профиль</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <h1>Ваши заказы</h1>
+    <div id="ordersList"></div>
+</div>
+<!--<button type="button" class="btn btn-outline-secondary" onclick="printLocalStorage()">Показать данные localStorage</button>-->
+
+<!-- Модальное окно с информацией о заказе -->
+<div class="modal fade" id="orderModal" tabindex="-1" aria-labelledby="orderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="orderModalLabel">Информация о заказе</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="orderDetailsModal">
+            </div>
+            <div class="modal-footer">
+                <!-- Добавленная кнопка для перехода на страницу с картой -->
+                <button type="button" class="btn btn-primary" onclick="openMapPage()">Показать на карте</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    window.onload = function() {
+        displayUserName();
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const userId = localStorage.getItem('userId');
+        if (!userId) {
+            alert('User not identified');
+            return;
+        }
+
+        fetch(`http://localhost:8000/orders_list/?user_id=${userId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('accessToken'),
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                const ordersList = document.getElementById('ordersList');
+                ordersList.innerHTML = ''; // Очистить текущий список заказов
+
+                data.forEach(order => {
+                    const card = document.createElement('div');
+                    card.className = 'row justify-content-center';
+                    card.innerHTML = `
+                <div class="col-6">
+                    <div class="container mt-5">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <h5 class="card-title">Заказ №${order.id}</h5>
+                                        <p class="card-text">Осталось времени: ${order.estimated_time} часов</p>
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="d-flex align-items-center">
+                                            <img src="img/kryg.svg" width="27" height="27" alt="Location icon">
+                                            <p class="fw-bold mb-0 ms-2">${order.origin_address}</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 mt-2">
+                                        <div class="d-flex align-items-center">
+                                            <img src="img/tyt.svg" width="27" height="27" alt="Location icon">
+                                            <p class="fw-bold mb-0 ms-2">${order.destination_address}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-center mt-3">
+                                    <button class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#orderModal" data-order-id="${order.id}">Подробнее</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+                    ordersList.appendChild(card);
+
+                    // Добавляем обработчик событий для кнопки "Подробнее"
+                    const button = card.querySelector('button');
+                    button.addEventListener('click', function() {
+                        const orderId = this.getAttribute('data-order-id');
+                        fetchOrderDetails(orderId); // Загрузка информации о заказе при нажатии на кнопку
+                    });
+                });
+            })
+            .catch(error => console.error('Error fetching orders:', error));
+    });
+
+
+    function displayUserName() {
+        const userName = localStorage.getItem('userName');
+        if (userName) {
+            document.getElementById('usernameDisplay').textContent = userName;
+        } else {
+            document.getElementById('usernameDisplay').textContent = 'Гость';
+        }
+    }
+
+    function fetchOrderDetails(orderId) {
+        fetch(`http://localhost:8000/orders_detail/${orderId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('accessToken'),
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                const orderDetailsModal = document.getElementById('orderDetailsModal');
+                orderDetailsModal.innerHTML = `
+            <p><strong>Номер заказа:</strong> ${data.id}</p>
+            <p><strong>Оценочное время:</strong> ${data.estimated_time} часов</p>
+            <p><strong>Адрес отправления:</strong> ${data.origin_address}</p>
+            <p><strong>Адрес доставки:</strong> ${data.destination_address}</p>
+            <p><strong>Статус заказа:</strong> В пути</p>
+            <p><strong>Общая стоимость:</strong> 1000000 руб.</p>
+        `;
+                // Сохраняем orderId для использования при открытии карты
+                localStorage.setItem('currentOrderId', orderId);
+            })
+            .catch(error => {
+                console.error(`Error fetching order details for order ID ${orderId}:`, error);
+                orderDetailsModal.innerHTML = 'Ошибка при загрузке данных о заказе.';
+            });
+    }
+
+    function openMapPage() {
+        const orderId = localStorage.getItem('currentOrderId');
+        if(orderId) {
+            window.location.href = `map_page.html?order_id=${orderId}`;
+        } else {
+            alert("Ошибка: ID заказа не найден.");
+        }
+    }
+
+    // Функция для печати всего содержимого localStorage
+    function printLocalStorage() {
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            const value = localStorage.getItem(key);
+            console.log(key + ": " + value);
+        }
+    }
+
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

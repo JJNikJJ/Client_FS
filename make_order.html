@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Создание нового заказа</title>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid d-flex justify-content-between">
+        <a class="navbar-brand" href="main_page.html">Главная</a>
+        <span class="navbar-text" id="usernameDisplay">Гость</span>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav d-flex justify-content-between flex-grow-1">
+                <li class="nav-item">
+                    <a class="nav-link" href="make_order.html">Сделать заказ</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="profile.html">Профиль</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+
+<div class="container mt-4">
+    <h1>Создать новый заказ</h1>
+    <form id="orderForm">
+        <div class="mb-3">
+            <label for="originCity" class="form-label">Город отправления</label>
+            <select class="form-select" id="originCity" name="origin_city" required>
+                <option value="Москва">Москва</option>
+                <option value="Санкт-Петербург">Санкт-Петербург</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="originAddress" class="form-label">Адрес отправления</label>
+            <select class="form-select" id="originAddress" name="origin_address" required>
+                <!-- Адреса Москвы -->
+                <option value="Красная площадь, Москва">Красная площадь</option>
+                <option value="Ленинградский проспект, 39, стр. 79, Москва">Ленинградский проспект</option>
+                <option value="Варшавское шоссе, 132, Москва">Варшавское шоссе</option>
+
+                <!-- Адреса Санкт-Петербурга -->
+                <option value="Невский проспект, Санкт-Петербург">Невский проспект</option>
+                <option value="Казанская улица, 7, Санкт-Петербург">Казанская улица</option>
+                <option value="Кронверкский проспект, 49, Санкт-Петербург">Кронверкский проспект</option>
+
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="destinationCity" class="form-label">Город прибытия</label>
+            <select class="form-select" id="destinationCity" name="destination_city" required>
+                <option value="Москва">Москва</option>
+                <option value="Санкт-Петербург">Санкт-Петербург</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="destinationAddress" class="form-label">Адрес прибытия</label>
+            <select class="form-select" id="destinationAddress" name="destination_address" required>
+                <!-- Адреса Москвы -->
+                <option value="Красная площадь, Москва">Красная площадь</option>
+                <option value="Ленинградский проспект, 39, стр. 79, Москва">Ленинградский проспект</option>
+                <option value="Варшавское шоссе, 132, Москва">Варшавское шоссе</option>
+
+                <!-- Адреса Санкт-Петербурга -->
+                <option value="Невский проспект, Санкт-Петербург">Невский проспект</option>
+                <option value="Казанская улица, 7, Санкт-Петербург">Казанская улица</option>
+                <option value="Кронверкский проспект, 49, Санкт-Петербург">Кронверкский проспект</option>
+
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="estimatedTime" class="form-label">Ожидаемое время до прибытия (ч)</label>
+            <input type="number" class="form-control" id="estimatedTime" name="estimated_time" required readonly>
+        </div>
+        <div class="mb-3">
+            <label for="remainingDistance" class="form-label">Оставшееся расстояние (км)</label>
+            <input type="number" class="form-control" id="remainingDistance" name="remaining_distance" required readonly>
+        </div>
+        <button type="submit" class="btn btn-outline-primary">Создать заказ</button>
+    </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const travelData = {
+        "Москва": {
+            "Санкт-Петербург": { distance: 700, time: 8 },
+            "Москва": { distance: 0, time: 0 }
+        },
+        "Санкт-Петербург": {
+            "Москва": { distance: 700, time: 8 },
+            "Санкт-Петербург": { distance: 0, time: 0 }
+        }
+    };
+
+    window.onload = function() {
+        displayUserName();
+        calculateDistanceAndTime();
+    };
+
+    function displayUserName() {
+        const userName = localStorage.getItem('userName');
+        if (userName) {
+            document.getElementById('usernameDisplay').textContent = userName;
+        } else {
+            document.getElementById('usernameDisplay').textContent = 'Гость';
+        }
+    }
+
+    document.getElementById('orderForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        let formData = new FormData(this);
+        let orderData = {
+            origin_city: formData.get('origin_city'),
+            origin_address: formData.get('origin_address'),
+            destination_city: formData.get('destination_city'),
+            destination_address: formData.get('destination_address'),
+            estimated_time: parseFloat(formData.get('estimated_time')),
+            remaining_distance: parseFloat(formData.get('remaining_distance')),
+            user_id: parseInt(localStorage.getItem('userId')) // Получаем user_id из localStorage
+        };
+        fetch('http://localhost:8000/orders/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + localStorage.getItem('accessToken')
+            },
+            body: JSON.stringify(orderData)
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                alert('Заказ успешно создан!');
+                window.location.href = 'main_page.html'; // Перенаправление на главную страницу
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+                alert('Произошла ошибка при создании заказа.');
+            });
+    });
+
+    // Функция для рассчета расстояния и времени
+    function calculateDistanceAndTime() {
+        const originCity = document.getElementById('originCity').value;
+        const destinationCity = document.getElementById('destinationCity').value;
+
+        const result = travelData[originCity][destinationCity];
+
+        document.getElementById('estimatedTime').value = result.time;
+        document.getElementById('remainingDistance').value = result.distance;
+    }
+
+    // Вызываем функцию при изменении выбора города или адреса
+    document.getElementById('originCity').addEventListener('change', calculateDistanceAndTime);
+    document.getElementById('destinationCity').addEventListener('change', calculateDistanceAndTime);
+</script>
+
+</body>
+</html>

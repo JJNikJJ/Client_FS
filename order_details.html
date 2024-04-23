@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Order Details</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <style>
+        #map {
+            height: 60%; /* Указываем высоту */
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="alert alert-info" role="alert">
+                В пути, осталось <span class="value_time"></span>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12">
+            <h4>Заказ №<span class="order_number"></span></h4>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-6">
+            <h5>Откуда:</h5>
+            <p class="address origin_address"></p>
+        </div>
+        <div class="col-6">
+            <h5>Куда:</h5>
+            <p class="address destination_address"></p>
+        </div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-12">
+            <button class="btn btn-outline-primary btn-lg btn-block">Открыть в приложении</button>
+        </div>
+    </div>
+</div>
+<script>
+    function getOrderIdFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('order_id');
+    }
+
+    const orderId = getOrderIdFromUrl();
+    if (!orderId) {
+        console.error('Order ID is missing in the URL');
+        alert('Order ID is not provided in the URL.');
+    } else {
+        console.log('Order ID:', orderId);
+        fetchOrderDetails(orderId);
+    }
+
+    function fetchOrderDetails(orderId) {
+        fetch(`http://localhost:8000/api/orders_detail/${orderId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('accessToken'),
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch order details');
+                }
+                return response.json();
+            })
+            .then(order => {
+                displayOrderDetails(order);
+            })
+            .catch(error => {
+                console.error('Error fetching order details:', error);
+                alert('Failed to fetch order details');
+            });
+    }
+
+    function displayOrderDetails(order) {
+        document.querySelector('.value_time').textContent = order.remainingTime + ' hours';
+        document.querySelector('.order_number').textContent = order.orderNumber;
+        document.querySelector('.origin_address').textContent = order.originAddress;
+        document.querySelector('.destination_address').textContent = order.destinationAddress;
+    }
+</script>
+</body>
+</html>
